@@ -32,10 +32,9 @@
 ## $Id: $
 ##
 
-.onAttach <- function (lib, pkg) {
-  cat("\n", pkg,": Rigorous - Arterial Spin Labelling (version = ",
-      as.character(sessionInfo()$otherPkgs$oro.asl["Version"]), ")\n",
-      sep="", fill=TRUE)
+.onAttach <- function(lib, pkg) {
+  txt <- paste(pkg, utils::packageDescription(pkg, lib)[["Version"]])
+  packageStartupMessage(txt)
 }
 
 ## .onLoad <- function (lib, pkg) {
