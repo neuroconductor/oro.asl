@@ -1,20 +1,49 @@
-
-
-
-
-# R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
-
-language: R
+language: r
 sudo: false
 cache: packages
-
 warnings_are_errors: true
-bioc_required: yes
-use_bioc: yes
-r_check_args: --as-cran
-r:
-- release
-
-
-
-
+use_bioc: true
+bioc_required: true
+cran: http://cran.rstudio.com
+os:
+- linux
+- osx
+env:
+  global:
+  - RGL_USE_NULL=TRUE
+  - PROJECT_NAME=neuroconductor
+r_check_args: "--as-cran"
+before_install:
+- export PROJ_DIR=`basename $PWD`
+- fname=travis_helpers.sh
+- wget -O ${fname} http://bit.ly/travis_helpers
+- cat ${fname}; source ${fname}; rm ${fname}
+- cat DESCRIPTION
+- Rscript -e 'source("https://install-github.me/mangothecat/callr")'
+- remove_neuroc_packages
+- cat DESCRIPTION
+- install_remotes_no_dep
+- cat DESCRIPTION
+- export PACKAGE_NAME=`package_name`
+- if [[ "${PACKAGE_NAME}" == "waveslim" ]]; then fftw_install ; fi
+after_success:
+- cat ${PACKAGE_NAME}.Rcheck/00install.out
+- cat ${PACKAGE_NAME}.Rcheck/00check.log
+after_failure:
+- cat ${PACKAGE_NAME}.Rcheck/00install.out
+- cat ${PACKAGE_NAME}.Rcheck/00check.log
+before_deploy:
+- travis_wait 100 R CMD INSTALL --build ${PKG_TARBALL}
+- if [[ "${TRAVIS_OS_NAME}" = "osx" ]]; then rm -f *.tar.gz; fi
+deploy:
+  provider: releases
+  skip_cleanup: true
+  file_glob: true
+  file: "${PACKAGE_NAME}*.t*gz"
+  on:
+    tags: true
+  api-key:
+    secure: a+quRLRTNcZxJskGaaiekZPPiuWtDnAIhSXN6apylb7g7SWEqncnMhpAeePETPfUGrtfepvH/HFaC7vxr2KHP0vd74p2Gccm+DubF468Sl+kA16wKi0wwxdn15Dc8ax2i6MmAY29W+uswbd6o620Li1vYkdw+vquKBJoJsiyTZGAVXZI5F+AMEH6aUGAC1Xrt8lllsu81McEIbBEnaQQYZvVgV3HyJUNwEL3wMK07ieMnwbBYYvRuwH/W4pOtMw8DEBvoyyYu+3fbDGRFsLyeBP+ymBW0on4ZcVkpLhwR3pB6ckRXgb9raFASsxf/MFXy6NNX2vqV0XdFK63lXZ0bi3hsAKv3HptNg2DmEsbAtZLA2dOZscFykp5Cq7U/DjG6sI7J1/RPpC7r4n7iS2ZP/GUaNhkQKK0cWIKEoqR7Gx6e9l36swa4sCTn69xd2DmTRtgs7SDIaVN4Vk47MdP3wpCgFyfWDxdRV3voonayNUnOFHejG1ugUSx96q0LJEFkszAty4Skk0Xm9/xjN9dOuNaKSPQohun200VIgvk0pECpWX7Nnk8fDlgx8sbvhMTdDSrYQUXalZXAYzK4yrtFSQWz3s8Gdo0hx9s1k66s4WNNMn3hgaXEtqsT7cXlrPhpZshcVcZwDozv3QmQ6BCBGizu1VnIMQhvK4V+cv+FEA=
+after_deploy:
+- if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then Rscript -e 'covr::coveralls(type =
+  "all")' ; fi
