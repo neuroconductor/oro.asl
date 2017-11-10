@@ -18,4 +18,4 @@ LazyData: no
 ZipData: no
 RoxygenNote: 5.0.1.9000
 biocViews:
-Remotes: neuroconductor/oro.nifti@e066bff259d77de5614a3ffc1c293310ab4eb997
+Remotes: neuroconductor/oro.nifti@248fafa9254064c3290286abd3ecf2dd791286fb
