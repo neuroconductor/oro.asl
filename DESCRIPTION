@@ -4,13 +4,11 @@ Date: 2016-09-23
 Title: Rigorous - Aterial Spin Labelling
 Author: Brandon Whitcher
 Maintainer: Brandon Whitcher <bjw34032@users.sourceforge.net>
-Depends: R (>= 2.10.0),    grDevices,    utils
-Suggests: 
-    oro.nifti,
-    covr
+Depends: R (>= 2.10.0), grDevices, utils
+Suggests: oro.nifti, covr
 Description: Medical imaging processing, visualization and statistical
-    methods for arterial spin labelling (ASL) acquisitions, part of the
-    Rigorous Analytics bundle.
+        methods for arterial spin labelling (ASL) acquisitions, part of
+        the Rigorous Analytics bundle.
 License: BSD_3_clause + file LICENSE
 URL: http://rigorousanalytics.blogspot.com, http://rig.oro.us.com
 LazyLoad: no
@@ -18,4 +16,5 @@ LazyData: no
 ZipData: no
 RoxygenNote: 5.0.1.9000
 biocViews:
-Remotes: neuroconductor/oro.nifti@36474ce8faeb769d00c7bab606f9bb1ca46ccba8
+Remotes:  
+    neuroconductor/oro.nifti@654f99fc85fdaf21253e3eca6bfb1678d46f41c9
