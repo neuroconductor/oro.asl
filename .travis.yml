@@ -16,6 +16,15 @@ os:
 - osx
 osx_image: xcode9
 dist: trusty
+r:
+- 3.2
+- 3.3
+- 3.4
+- release
+- devel
+allow_failures:
+- r: devel
+- os: osx
 env:
   global:
   - RGL_USE_NULL=TRUE
@@ -30,8 +39,10 @@ before_install:
 - cat ${fname}; source ${fname}; rm ${fname}
 - cat DESCRIPTION
 - start_xvfb ;
+- export rver=`r_version`;
 - if [ "$TRAVIS_OS_NAME" = "osx" ]; then no_open_mp ; fi
 - Rscript -e 'source("https://install-github.me/mangothecat/callr")'
+- jags_install
 - remove_neuroc_packages
 - cat DESCRIPTION
 - install_remotes_no_dep
@@ -39,8 +50,9 @@ before_install:
 - export PACKAGE_NAME=`package_name`
 - if [[ "${PACKAGE_NAME}" == "waveslim" ]]; then fftw_install ; fi
 - if [[ "${PACKAGE_NAME}" == "dti" ]]; then gsl_install ; fi
-- if [[ "${PACKAGE_NAME}" == "ROpenCVLite" ]]; then shopt -s expand_aliases ; x=`Rscript
-  -e "cat(Sys.which('R'))"` ; alias R="travis_wait 100 ${x}" ; fi
+- if [[ "${PACKAGE_NAME}" == "ROpenCVLite" || "${PACKAGE_NAME}" == "Rvision" ]]; then
+  shopt -s expand_aliases ; x=`Rscript -e "cat(Sys.which('R'))"` ; alias R="travis_wait
+  100 ${x}" ; fi
 after_success:
 - cat ${PACKAGE_NAME}.Rcheck/00install.out
 - cat ${PACKAGE_NAME}.Rcheck/00check.log
@@ -48,6 +60,9 @@ after_failure:
 - cat ${PACKAGE_NAME}.Rcheck/00install.out
 - cat ${PACKAGE_NAME}.Rcheck/00check.log
 before_deploy:
+- if [ "$TRAVIS_OS_NAME" = "osx" ]; then PKG_TARBALL=$(ls -1t *.tgz | head -n 1);
+  PKG_TARBALL_WITH_R=`echo $PKG_TARBALL | sed 's/.tgz/_'"R${rver}"'.tgz/'` ; mv ${PKG_TARBALL}
+  ${PKG_TARBALL_WITH_R} ; echo "Built tarball is ${PKG_TARBALL_WITH_R}" ; fi
 - if [[ "${TRAVIS_OS_NAME}" = "osx" ]]; then rm -f *.tar.gz; fi
 deploy:
   provider: releases
@@ -57,7 +72,8 @@ deploy:
   on:
     tags: true
   api-key:
-    secure: CW+98fZc/pxTQ6VX63ApwEu1p/drfSjywsOWv2xD+D5UtgmJwsci5uoeV3kfv11/367sn2QZVyiGx/I6QVcqX/JH/H56yE+tsC8clsr9bs0hW8ujPQPudW9sD/7rkNUXvvdab8MeN+b5YpBhCIPD6CeqlPoMS5XqQeAr1EJr4oopEsvwAkkKCki5yw4bwZyZXQF7aSslDLluR1X74t206GLS9ErsypRrgdFnrWuCzrNYvLQonuzEygNXg9a5nzZjz/n9xWSRDchHYX04NdijQwe2QNDSLbC1LW2l9t47sZ0fYNPa4xRNXhMRFjUSjCq236g/WgelhUH5I5tjNvsi/TaD4e10i5cQjCpBWJa+8H8AlvbkEqnvc4oqT25LYkEB4nw8pHCh0nZPL63x4SP5SVL3mUuQ8c8+9zdJA8xPGoJQgOB9i0sitpxixbV9RdMTsDK+Zr6k6bCgvLUqolkhTrboAy/ruqxlUXb8ayy4n+ygrjbdDaiGff0r4eN5999yryqJ4UcxdtftYujYW6OACtYByIiJcnauOu7w24HJJVOJKXwq3PHj6Dm/8nOi9Cm9XBGmykfTiJRmpYW4B/qHrPs636sdpIQrMli1BtLxKjG/n+S7SnxIvhAbEM/cdXK0MevvJ42Qs9z5QVp2K8DD/mDSsJzlZb8F/eIxmHT+z0M=
+    secure: hSpTL2l84tW9NejtfOXA60IvI9LEW97Ief9wVhNs6Mgv4QpZhQ/qfo1WfIm7LtXfmxr9UOuKrQMQ1p1fOPWvTwkexVRBw0Z4ijeB7j/oRcO+j+K7KNfZsmYqybHj5D9txXUutcr9GlGswZ7p6kTMGCRcnXb1C3vNGXpS68Hgj77PKU6wR2cFgwpWpBXlpPrijf5A9jvgLXzIsDEQPUcCz4b3fKFOBI3sjFvHCW3VWre47Cv/q1xYwfBB37kaObKFlg9hij41gPkZORK6V/eZtDhtHGCGIRCmUZp320iDGm5Y0DAKlMygvxIstdouP+S94jrps+/cXgA2kXuErbpm3UyqgP1DHgsragf2QowKPn80p3vgzV4CgJKfuvfvFP4BZm4mRTE9Bz9JEBCrNGjg3bA2KqRrEeBZqvVEFs/uiQ1K3+xx1H1O2ifLDhGiN5GQTuCoFjadMJv1tZUg9sWi/3u0p09X3vgktNC22M2HS4jxslvgKWjJm4pW58k//ceJEXT2u0OzXSpSNW0nJdXrXohliTNn2Ng8lecJoqQbxplMveR2SItz6KtmyvDqo3dh2Md3Adm5RRxZu8OdS4PvvW8rERB+pGulQx/lN00Dcd+Ntk4KOcs1g819Qg+bvYMdXM+AI7Usve0B2Xfsv+819tFelKTU6te3pkSXevMOEm0=
 after_deploy:
-- if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then echo 'covr::coveralls(type = "all")'
-  > neuroc_covr.R ; travis_wait 100 Rscript neuroc_covr.R ; rm neuroc_covr.R ; fi
+- if [[ "${TRAVIS_OS_NAME}" == "linux" && ${TRAVIS_R_VERSION_STRING} = "release" ]];
+  then echo 'covr::coveralls(type = "all")' > neuroc_covr.R ; travis_wait 100 Rscript
+  neuroc_covr.R ; rm neuroc_covr.R ; fi
