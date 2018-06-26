@@ -5,10 +5,7 @@ Title: Rigorous - Aterial Spin Labelling
 Author: Brandon Whitcher
 Maintainer: Brandon Whitcher <bjw34032@users.sourceforge.net>
 Depends: R (>= 2.10.0), grDevices, utils
-Suggests: 
-    oro.nifti,
-    covr,
-    testthat
+Suggests: oro.nifti, covr, testthat
 Description: Medical imaging processing, visualization and statistical
         methods for arterial spin labelling (ASL) acquisitions, part of
         the Rigorous Analytics bundle.
@@ -20,4 +17,4 @@ ZipData: no
 RoxygenNote: 5.0.1.9000
 biocViews:
 Remotes: 
-    neuroconductor/oro.nifti@15b6d610da5856c45fdca71728f2e40f93503f05
+    neuroconductor/oro.nifti@0693a44c8da390dd9e733ec0ef6eea21bf33b155
