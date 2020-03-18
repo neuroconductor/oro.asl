@@ -1,85 +1,96 @@
 language: r
-sudo: false
-cache: packages
-warnings_are_errors: true
-use_bioc: true
+warnings_are_errors: false
+cache: false
 bioc_required: true
 cran: http://cran.rstudio.com
 dist: trusty
 addons:
   apt:
     packages:
+    - libcurl4-openssl-dev
+    - libxml2-dev
     - libfftw3-dev
     - libgsl0-dev
-    - libgsl0ldbl
-os:
-- linux
-- osx
-osx_image: xcode9
-r:
-- 3.2
-- 3.3
-- 3.4
-- release
-- devel
-matrix:
-  allow_failures:
-  - r: devel
+    - mesa-common-dev
+    - libglu1-mesa-dev
+    - devscripts
+os: linux
+services: xvfb
+r: release
 env:
   global:
+  - R_BUILD_ARGS="--no-manual"
+  - R_CHECK_ARGS="--as-cran --install-args=--build"
   - RGL_USE_NULL=TRUE
+  - WARNINGS_ARE_ERRORS=1
   - PROJECT_NAME=neuroconductor
   - DISPLAY=:99.0
-  - secure: ltiZzzSTqVLufRatNOUS5c6Im8NRNmwef7kmgVzmhTffXM0dFr2EQtdsJc9AyiIovZtle8xyGLOOMxhkNP98FS5watXbTaNiXZI8N74d3FJp4fMZhsrHp704ucvpIcYpGQtfYj3uMJhmOVpJURm+fAX9UbtQG081/DAT9DjcXwbha5y/0xct+a6PUe3DSJk0BydjNF5wOZQKYDBBZDCnSuDI6wzHfXYz/Q06HlNerisgmX1eP5XdSbYOUKTV0zArUtpXRMgSMaOCfkdNGrR3gOpsmD7OCQNyPre6376+nss0IsHdKmj0wNL2bHjyqV2yPzcCDu5YSNAH4/oZQ+cdn7txU026yKQCiJae4CVfVkjnv1SOneKve5rra+RGkcH+gtHLdtlKT7xw1/iEhrtPMIWLnbd7WjjmhOHvbehICI2S8cTkJoH67W9YSi8NopS7wzB3UDbw/gLY/ugbs0FrU5KzF2RcxFTO2+LJ08KdRXgYBKrqcPGXc8kmyjPiAX+4JgpMi2i0IbINOqfut4iMepXKtjNQ/D1PuVBOwzhilHhVcxM7PsRWVjNLCO3FSa6NY0SikfB1LvdLUlH+UtWGrlx6MXPrtJobhQGxdm5soOOS9iEkUCwyXg5FCROgqMrtAUbcY5hNyBJCIuH8e6CDQqu4b6E6wrn2+H0BxSuahPI=
-r_check_args: "--as-cran --install-args=--build"
+  - R_REMOTES_NO_ERRORS_FROM_WARNINGS=true
+  - _R_CHECK_FORCE_SUGGESTS_=false
+  - secure: nITibAJVPNbQbIru8zwJZFnbXXsS9loqUBAD4Jq95mFOkKPT1HiiNdAbeYRW+6Qwg0l92uyMVZo4yCNgfQinFlH/6h/XyeJTjR8rSgwy8vuM6KQsh82/V/zXZFlvcc9A1KvwY4YuBUwoAVmOJKm/bgcYe8C89OJGmDYVwXB7ZQlF5gqB2NqNsG0IdYr65CKFzWpHkrPER53GeFHu2SqD6B+8ik4eEmNxzTuVPSZKHLcep8MQ/k0f9cdG10ww1t56zGM2yBXG08rUOPjlVf86PW6wE/ZVJPRQxCnfO5BOwnaVBM/+Sjnwt2swCcHRlEbbLi/yZIw5HpdXcEx9qo3DEruKE9r4rQmp4qJXOJ3KSRMat4Q/B8i/IhrWGBhotB6kZasAR4kI15HNA0xxNDx8xXYyop2oNVWAZAU/4+fkpric7i2dVgJ7NIJYr+3qsoFRopxCbeaGAJHCh3vhkUbcZ84GmNGgDbFeV6+eq/Y+puRlRMGuMwkIl9Myz9eJSAy21nE4D+tvdygjNA1pfsL8JY+npn98dJkNfmrcFL+W2kL7/Aj53rzTNRBhQXPBikwcIVscs8AMjLTjOa6HzeNF2ETrSwyMXSmSikDvnjBQXCdz1+Qgdrfz2ZQVhEB/EuMmYgNatZy4LW1ZjS06NDnU7qGoYvu3yiF24zv5vkcR/uM=
 before_install:
+- if [ "$TRAVIS_DIST" = "trusty" ]; then sudo apt-get -y install libgsl0ldbl ; fi
 - ulimit -n 2048
+- export LD_LIBRARY_PATH=/usr/local/clang/lib:${LD_LIBRARY_PATH}
 - export PROJ_DIR=`basename $PWD`
+- echo "travis_wait*\.log$" >> .Rbuildignore
 - fname=travis_helpers.sh
 - wget -O ${fname} http://bit.ly/travis_helpers
 - cat ${fname}; source ${fname}; rm ${fname}
 - cat DESCRIPTION
 - start_xvfb ;
-- export rver=`r_version`;
-- if [ "$TRAVIS_OS_NAME" = "osx" ]; then no_open_mp ; fi
-- jags_install
+- jags_install || true;
+- if `need_v8`; then v8_install || true; fi
+- dcmtk_install || true;
+- gsl_install 2.1 || true ;
+- export rver=`r_version`; echo $rver ;
+- export PACKAGE_NAME=`package_name`
+- export RCHECK_DIR=${PACKAGE_NAME}.Rcheck
 - remove_neuroc_packages
+- export ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS=1
+- x=`export_clang_cxx`; eval ${x}
+- echo "CC=${CC}, CXX=${CXX}, CXX1X=${CXX1X}"
+- echo "CXX1XSTD=${CXX1XSTD}, CXX11=${CXX11}"
+- clang_cxx
+- export cmake_version="3.11"
+- cmake --version
+- x=`cmake_setup`; echo "${x}"; eval ${x};
+- cmake --version
+- export ants_user=neuroconductor
+- if [[ "${PACKAGE_NAME}" == "ITKR" || "${PACKAGE_NAME}" == "ANTsRCore" || "${PACKAGE_NAME}"
+  == "ANTsR" ]]; then Rscript -e "install.packages(c('Rcpp', 'RcppEigen'), type =
+  'source', repo = 'http://cran.rstudio.com')" ; fi
+- if [[ "${PACKAGE_NAME}" == "ITKR" || "${PACKAGE_NAME}" == "ANTsRCore" ]]; then export
+  R_BUILD_ARGS="${R_BUILD_ARGS} --no-build-vignettes " ; export R_CHECK_ARGS="--no-vignettes
+  ${R_CHECK_ARGS}" ; fi
+- if [[ "${PACKAGE_NAME}" != "ITKR" ]]; then echo "Installing Missing Deps ITKR" ;
+  install_missing_remote_deps_all ${ants_user}/ITKR ; gh_binary_install ${ants_user}/ITKR
+  ; fi
+- if [[ "${PACKAGE_NAME}" != "ANTsRCore" && "${PACKAGE_NAME}" != "ITKR" ]]; then echo
+  "Installing Missing Deps ANTsRCore" ; install_missing_remote_deps_all ${ants_user}/ANTsRCore;
+  gh_binary_install_passive ${ants_user}/ANTsRCore ; fi
+- if [[ "${PACKAGE_NAME}" != "ANTsRCore" && "${PACKAGE_NAME}" != "ITKR" && "${PACKAGE_NAME}"
+  != "ANTsR" ]]; then echo "Installing Missing Deps ANTsR" ; install_missing_remote_deps_all
+  ${ants_user}/ANTsR ; gh_binary_install_passive ${ants_user}/ANTsR ; fi
+- if [[ "${PACKAGE_NAME}" == "ANTsR" ]]; then export _R_CHECK_FORCE_SUGGESTS_=false
+  ; fi
 - cat DESCRIPTION
 - install_remotes_no_dep
 - cat DESCRIPTION
-- export PACKAGE_NAME=`package_name`
-- echo "Package Name is $PACKAGE_NAME"
-- if [[ "${PACKAGE_NAME}" == "waveslim" ]]; then fftw_install ; fi
-- if [[ "${PACKAGE_NAME}" == "dti" ]]; then gsl_install ; fi
-- if [[ "${PACKAGE_NAME}" == "ROpenCVLite" || "${PACKAGE_NAME}" == "Rvision" ]]; then
-  shopt -s expand_aliases ; x=`Rscript -e "cat(Sys.which('R'))"` ; echo "reset R"
-  ; alias R="travis_wait 100 ${x}" ; fi
+- echo $PATH ;
+- install_deps_no_suggests
 - install_python_requirements ;
-after_success:
-- cat ${PACKAGE_NAME}.Rcheck/00install.out
-- cat ${PACKAGE_NAME}.Rcheck/00check.log
-after_failure:
-- cat ${PACKAGE_NAME}.Rcheck/00install.out
-- cat ${PACKAGE_NAME}.Rcheck/00check.log
-before_deploy:
-- if [ "$TRAVIS_OS_NAME" = "osx" ]; then PKG_TARBALL=$(ls -1t *.tgz | head -n 1);
-  PKG_TARBALL_WITH_R=`echo $PKG_TARBALL | sed 's/.tgz/_'"R${rver}"'.tgz/'` ; mv ${PKG_TARBALL}
-  ${PKG_TARBALL_WITH_R} ; echo "Built tarball is ${PKG_TARBALL_WITH_R}" ; fi
-- if [ "$TRAVIS_OS_NAME" = "linux" ]; then PKG_TARBALL=$(ls -1t *.tar.gz | head -n
-  1); PKG_TARBALL_WITH_R=`echo $PKG_TARBALL | sed 's/.tar.gz/_'"R${rver}"'.tar.gz/'`
-  ; mv ${PKG_TARBALL} ${PKG_TARBALL_WITH_R} ; echo "Built tarball is ${PKG_TARBALL_WITH_R}"
-  ; fi
-- if [[ "${TRAVIS_OS_NAME}" = "osx" ]]; then rm -f *.tar.gz; fi
+- R CMD javareconf ;
+- travis_run_cache
+script:
+- Rscript -e 'install.packages("remotes")'
+- Rscript -e 'remotes::install_github("hadley/pkgdown")'
+- travis_wait 100 Rscript -e 'pkgdown::build_site()'
 deploy:
-  provider: releases
+  provider: pages
   skip_cleanup: true
-  file_glob: true
-  file: "${PACKAGE_NAME}*.t*gz"
+  keep_history: true
+  local_dir: docs
   on:
-    tags: true
-  api-key:
-    secure: RoifxdK2D85HvfSpsvsiJv0uNJot/OzvDOpbIMVx69uJ8/WTRKL6yqpwglhHZZkB9bHrSoW62b+QG+a0rhAIyejUkWc7IcCTCKZymxGCSrpzc42tuJOQOSOJvsgSLlTTUrJ62vD1CYm04XzHU0taA7+52c/VE7rkf3yfnwFxl9Ok9OR1+wmcP/iOkiwivkqbe7JzOxIf7/DkyiNmqMHEPOVtLs9k2lCXVZlFk6pWPg8VauVxB7nog+uA8RFGC3p9+INMzCYeMG0fzGaMq2Njv2Af/zPKV9chkTZ4SOfy4wWUTLRwAp+GXT+CVNokvgQyuyDL8josW1kJQNqIQB0YiBRPIMOSipQZA04cEOJtQ3FJcuvmjZ1hqf/OSTkgmV3ybct/Vqlr/KqPZZa+FXpjVqyMrqsbmgjW1P9v+swbJEgEgamRxRJyBWRunAwBY2uJlVxys2Di8JopmhHO+uqS1xK+vkDXStiYUvaHXDOOM6xvHwWADoy5ETxh3u6bGOFxvolinLVC8p6HRlctWCZ3kEXAaMi3EP3shSDY4GCG4LEn4KpAb3y8DaVHKmGlHP250zSZqKzRTcBEjExIU89NXmZIQRCf/fQRARnHLNjG3xdGMzg7tRfJM2pY5zIZFU6OdhfRD0NP31njkMq+VlZihW9pc/fw7J7EqpBi2KC+068=
-after_deploy:
-- if [[ "${TRAVIS_OS_NAME}" == "linux" && ${TRAVIS_R_VERSION_STRING} = "release" ]];
-  then echo 'covr::coveralls(type = "all", quiet = FALSE)' > neuroc_covr.R ; travis_wait
-  100 Rscript neuroc_covr.R ; rm neuroc_covr.R ; fi
+    branch: master
+  token: "$GITHUB_TOKEN"
